@@ -94,3 +94,34 @@
 * Validated the separation of concerns by placing the Express server appropriately within the `infrastructure/server` boundary so that `core` does not depend on HTTP frameworks.
 
 ---
+
+### 3. Database Layer Setup & Prisma Migration
+
+**Prompt:**
+
+> "so lets setup database for now"
+> "okay create database structer and init setup also write .env for database url"
+> "remove sql structer and use prisma instend"
+> Fixing IDE errors: "@[tsconfig.json:current_problems]" and "@[seed.ts:current_problems]"
+
+---
+
+**Agent Output (Database & ORM Setup):**
+
+* Initially designed and implemented a raw SQL architecture (`pg` drivers, `init.sql`, `setup.ts`) to comply with strict core separation.
+* At the user's direction, swiftly migrated the entire database layer to **Prisma ORM**:
+  * Uninstalled `pg` and scrubbed the raw SQL scripts.
+  * Installed and initialized Prisma, explicitly downgrading to v5 structurally to bypass fresh breaking changes in v7.
+  * Wrote `schema.prisma` rigorously mapping the FuelEU tables (Routes, ShipCompliance, Banking, Pooling).
+  * Ported the raw SQL seed data into a fully typed Prisma typescript `seed.ts` script.
+* Resolved immediate local IDE environment issues:
+  * Explained and fixed a ghost-file cache warning in `tsconfig.json` caused by deleting `setup.ts` mid-session.
+  * Fixed missing node process definitions inherently absent in isolated scripts by strategically attaching a `/// <reference types="node" />` directive to `seed.ts`.
+
+---
+
+**Validation / My Understanding:**
+
+* Reinforced that Prisma will exclusively be utilized inside `src/adapters/outbound` so that the Hexagonal purity of the Domain layer remains uncompromised.
+
+---
