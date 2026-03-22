@@ -1,8 +1,8 @@
 import type { RoutePort } from "../../../core/ports/RoutePort";
 import type { Route } from "../../../core/domain/Route";
-import type { ComparisonResult } from "../../../core/domain/Comparison";
+import type { ComparisonResponse } from "../../../core/domain/Comparison";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export class RouteApiAdapter implements RoutePort {
   async getRoutes(): Promise<Route[]> {
@@ -22,10 +22,11 @@ export class RouteApiAdapter implements RoutePort {
     }
   }
 
-  async getComparison(): Promise<ComparisonResult[]> {
+  async getComparison(): Promise<ComparisonResponse> {
     const response = await fetch(`${API_BASE_URL}/routes/comparison`);
     if (!response.ok) {
-      throw new Error("Failed to fetch comparison data");
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to fetch comparison data");
     }
     return response.json();
   }

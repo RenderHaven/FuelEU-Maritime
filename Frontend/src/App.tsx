@@ -1,6 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { RouteApiAdapter } from './adapters/infrastructure/api/RouteApiAdapter';
+import { BankingApiAdapter } from './adapters/infrastructure/api/BankingApiAdapter';
+import { PoolingApiAdapter } from './adapters/infrastructure/api/PoolingApiAdapter';
 import { RouteUseCases } from './core/application/RouteUseCases';
+import { BankingUseCases } from './core/application/BankingUseCases';
+import { PoolingUseCases } from './core/application/PoolingUseCases';
 import RoutesTab from './adapters/ui/components/RoutesTab';
 import CompareTab from './adapters/ui/components/CompareTab';
 import BankingTab from './adapters/ui/components/BankingTab';
@@ -12,7 +16,12 @@ const App: React.FC = () => {
 
   // Hexagonal Dependency Injection
   const routeApiAdapter = useMemo(() => new RouteApiAdapter(), []);
+  const bankingApiAdapter = useMemo(() => new BankingApiAdapter(), []);
+  const poolingApiAdapter = useMemo(() => new PoolingApiAdapter(), []);
+
   const routeUseCases = useMemo(() => new RouteUseCases(routeApiAdapter), [routeApiAdapter]);
+  const bankingUseCases = useMemo(() => new BankingUseCases(bankingApiAdapter), [bankingApiAdapter]);
+  const poolingUseCases = useMemo(() => new PoolingUseCases(poolingApiAdapter), [poolingApiAdapter]);
 
   const tabs = [
     { id: 'routes', label: 'Routes', icon: <LayoutDashboard className="w-4 h-4" /> },
@@ -68,9 +77,9 @@ const App: React.FC = () => {
 
         <div className="relative">
           {activeTab === 'routes' && <RoutesTab routeUseCases={routeUseCases} />}
-          {activeTab === 'compare' && <CompareTab />}
-          {activeTab === 'banking' && <BankingTab />}
-          {activeTab === 'pooling' && <PoolingTab />}
+          {activeTab === 'compare' && <CompareTab routeUseCases={routeUseCases} />}
+          {activeTab === 'banking' && <BankingTab bankingUseCases={bankingUseCases} />}
+          {activeTab === 'pooling' && <PoolingTab poolingUseCases={poolingUseCases} />}
         </div>
       </main>
 

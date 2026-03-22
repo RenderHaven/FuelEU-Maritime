@@ -1,6 +1,6 @@
 import type { RoutePort } from "../ports/RoutePort";
 import type { Route } from "../domain/Route";
-import type { ComparisonResult } from "../domain/Comparison";
+import type { ComparisonResponse } from "../domain/Comparison";
 
 export class RouteUseCases {
   private routePort: RoutePort;
@@ -16,7 +16,7 @@ export class RouteUseCases {
     return this.routePort.setBaseline(routeId);
   }
 
-  async getComparison(): Promise<ComparisonResult[]> {
+  async getComparison(): Promise<ComparisonResponse> {
     return this.routePort.getComparison();
   }
 }

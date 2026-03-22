@@ -1,8 +1,11 @@
 import type { Route } from "./Route";
 
-export interface ComparisonResult {
-  baselineRoute: Route;
-  comparisonRoute: Route;
+export interface RouteComparison extends Route {
   percentDiff: number;
-  isCompliant: boolean;
+  compliant: boolean;
+}
+
+export interface ComparisonResponse {
+  baseline: Route;
+  comparisons: RouteComparison[];
 }

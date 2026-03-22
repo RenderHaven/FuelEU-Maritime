@@ -255,3 +255,64 @@
 * Updated code to first excute non-uuid setup then uuid setup
 
 ---
+
+### 9. Finalizing Frontend UI — Compare, Banking & Pooling Tabs
+
+**Prompt:**
+
+> "update front end so list all route sort by route id default"
+> "add one empty block like in poolingTab and etc in routeTab show when error or empty routes"
+> "now update compare, banking and pooling tabs too"
+> "see description.md for reference too"
+
+---
+
+**Agent Output (UI Finalization):**
+
+* **Routes Tab Enhancements:**
+  * Added default sorting by `routeId` using `localeCompare` so routes display as R001, R002, R003 etc.
+  * Replaced plain-text loading/error messages with styled cards matching the PoolingTab design (centered card with icon, heading, description).
+  * Added an amber-themed empty state block for when filters return zero routes, keeping the filter bar visible so users can adjust criteria.
+
+* **Domain/Port/Adapter Mismatch Fixes:**
+  * Updated `Comparison.ts` with new `RouteComparison` and `ComparisonResponse` interfaces matching the backend's actual response shape (`{ baseline, comparisons: [{ ...route, percentDiff, compliant }] }`).
+  * Updated `RoutePort.ts`, `RouteUseCases.ts`, and `RouteApiAdapter.ts` to use the new `ComparisonResponse` return type.
+  * Added missing `year` parameter to `BankingPort.ts`, `BankingUseCases.ts`, and `BankingApiAdapter.ts` for `/bank` and `/apply` endpoints.
+  * Changed `PoolingPort.ts`, `PoolingUseCases.ts`, and `PoolingApiAdapter.ts` from `createPool(members)` to `createPool(year, shipIds)` to match backend's `POST /pools` expected body.
+
+* **Compare Tab (full implementation):**
+  * Fetches baseline vs comparison data from `/routes/comparison`.
+  * Displays baseline info card with route details and target intensity (89.3368 gCO₂e/MJ).
+  * Canvas bar chart comparing GHG intensities across routes, with a red dashed target line and color-coded bars (blue = compliant, orange = non-compliant).
+  * Comparison table with routeId, vesselType, fuelType, GHG intensity, % difference, and compliance badges (✅ Yes / ❌ No).
+
+* **Banking Tab (full implementation):**
+  * Ship ID + Year lookup form to fetch compliance balance via `GET /compliance/cb`.
+  * KPI card displaying CB value with surplus (green) or deficit (red) indicator.
+  * "Bank Surplus" action with amount input, disabled when CB ≤ 0 (Article 20 compliance).
+  * "Apply Banked Surplus" action with target year and amount inputs.
+  * Success/error feedback banners with automatic balance refresh after actions.
+
+* **Pooling Tab (full implementation):**
+  * Year input + Ship ID field to add pool members one at a time with auto-fetched adjusted CBs.
+  * Members table showing Ship ID, adjusted CB value, and surplus/deficit status.
+  * Pool sum indicator card (green if ≥ 0, red if < 0) (Article 21 compliance).
+  * "Create Pool" button disabled if pool sum < 0 or fewer than 2 members.
+  * Pool results table showing before/after CBs and change per member.
+
+* **App.tsx Wiring:**
+  * Added dependency injection for `BankingApiAdapter`, `PoolingApiAdapter`, `BankingUseCases`, and `PoolingUseCases` via `useMemo`.
+  * Passed `routeUseCases` to `CompareTab`, `bankingUseCases` to `BankingTab`, `poolingUseCases` to `PoolingTab`.
+
+* Verified with `npx tsc --noEmit` — zero compilation errors.
+
+---
+
+**Validation / My Understanding:**
+
+* Validated that all four tabs (Routes, Compare, Banking, Pooling) function end-to-end matching the assignment specification in `documentation.md`. The domain/adapter mismatches were identified and corrected to ensure the frontend communicates correctly with the backend APIs. The UI uses consistent design patterns (loading/error/empty states) across all tabs.
+
+* Updated minor UI issues like default sorting by routeId and styled empty/error state blocks based on user feedback.
+
+---
+

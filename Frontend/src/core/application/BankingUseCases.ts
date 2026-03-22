@@ -11,11 +11,11 @@ export class BankingUseCases {
     return this.bankingPort.getComplianceBalance(shipId, year);
   }
 
-  async bankSurplus(shipId: string, amount: number): Promise<void> {
-    return this.bankingPort.bankSurplus(shipId, amount);
+  async bankSurplus(shipId: string, year: number, amount: number): Promise<void> {
+    return this.bankingPort.bankSurplus(shipId, year, amount);
   }
 
-  async applyBankedSurplus(shipId: string, targetYear: number, amount: number): Promise<void> {
-    return this.bankingPort.applyBankedSurplus(shipId, targetYear, amount);
+  async applyBankedSurplus(shipId: string, year: number, amount: number): Promise<void> {
+    return this.bankingPort.applyBankedSurplus(shipId, year, amount);
   }
 }
