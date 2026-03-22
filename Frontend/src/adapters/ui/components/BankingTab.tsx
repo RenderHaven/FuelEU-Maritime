@@ -1,12 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BankingUseCases } from '../../../core/application/BankingUseCases';
+import { RouteUseCases } from '../../../core/application/RouteUseCases';
 import type { ComplianceBalance } from '../../../core/domain/Banking';
+import type { Route } from '../../../core/domain/Route';
 
 interface BankingTabProps {
   bankingUseCases: BankingUseCases;
+  routeUseCases: RouteUseCases;
 }
 
-const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
+const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases }) => {
+  // Available routes for dropdown
+  const [routes, setRoutes] = useState<Route[]>([]);
+
+  useEffect(() => {
+    routeUseCases.getRoutes().then(data => {
+      setRoutes(data.sort((a, b) => a.routeId.localeCompare(b.routeId)));
+    }).catch(() => { });
+  }, []);
   // Lookup state
   const [shipId, setShipId] = useState('');
   const [year, setYear] = useState('2025');
@@ -26,21 +37,32 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
   // Feedback
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const handleLookup = async () => {
-    if (!shipId || !year) return;
-    try {
-      setLookupLoading(true);
-      setLookupError(null);
-      setFeedback(null);
-      const result = await bankingUseCases.getComplianceBalance(shipId, parseInt(year));
-      setBalance(result);
-    } catch (err: any) {
-      setLookupError(err.message || 'Failed to fetch compliance balance');
+  // Auto-fetch balance when shipId or year changes
+  useEffect(() => {
+    if (!shipId || !year) {
       setBalance(null);
-    } finally {
-      setLookupLoading(false);
+      return;
     }
-  };
+    let cancelled = false;
+    const fetchBalance = async () => {
+      try {
+        setLookupLoading(true);
+        setLookupError(null);
+        setFeedback(null);
+        const result = await bankingUseCases.getComplianceBalance(shipId, parseInt(year));
+        if (!cancelled) setBalance(result);
+      } catch (err: any) {
+        if (!cancelled) {
+          setLookupError(err.message || 'Failed to fetch compliance balance');
+          setBalance(null);
+        }
+      } finally {
+        if (!cancelled) setLookupLoading(false);
+      }
+    };
+    fetchBalance();
+    return () => { cancelled = true; };
+  }, [shipId, year]);
 
   const handleBank = async () => {
     if (!shipId || !year || !bankAmount) return;
@@ -82,19 +104,20 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Lookup Form */}
+      {/* Selection Form */}
       <div className="p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-blue-100 shadow-sm">
-        <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-4">Compliance Balance Lookup</h3>
+        <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-4">Select Ship & Year</h3>
         <div className="flex flex-wrap gap-4 items-end">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Ship / Route ID</label>
-            <input
-              type="text"
+            <select
               value={shipId}
               onChange={(e) => setShipId(e.target.value)}
-              placeholder="e.g. R001"
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-40"
-            />
+              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
+            >
+              <option value="">Select Route</option>
+              {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Year</label>
@@ -105,13 +128,9 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
               className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-28"
             />
           </div>
-          <button
-            onClick={handleLookup}
-            disabled={lookupLoading || !shipId || !year}
-            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg text-sm font-bold uppercase tracking-wider shadow-lg shadow-blue-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {lookupLoading ? 'Loading...' : 'Get Balance'}
-          </button>
+          {lookupLoading && (
+            <span className="text-sm text-blue-500 font-medium animate-pulse">Loading balance...</span>
+          )}
         </div>
       </div>
 
@@ -132,11 +151,10 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
 
       {/* Feedback Banner */}
       {feedback && (
-        <div className={`p-4 rounded-xl border text-sm font-medium ${
-          feedback.type === 'success'
+        <div className={`p-4 rounded-xl border text-sm font-medium ${feedback.type === 'success'
             ? 'bg-green-50 border-green-200 text-green-800'
             : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
+          }`}>
           {feedback.message}
         </div>
       )}
@@ -160,11 +178,10 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
       {balance && (
         <div className="space-y-6">
           {/* KPI Card */}
-          <div className={`p-6 rounded-2xl border shadow-xl ${
-            isSurplus
+          <div className={`p-6 rounded-2xl border shadow-xl ${isSurplus
               ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-900/5'
               : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 shadow-red-900/5'
-          }`}>
+            }`}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Compliance Balance</p>
@@ -178,11 +195,10 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases }) => {
               </div>
             </div>
             <div className="mt-3">
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${
-                isSurplus
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${isSurplus
                   ? 'bg-green-100 text-green-700 border-green-200'
                   : 'bg-red-100 text-red-700 border-red-200'
-              }`}>
+                }`}>
                 {isSurplus ? '✓ Surplus' : '✗ Deficit'}
               </span>
             </div>

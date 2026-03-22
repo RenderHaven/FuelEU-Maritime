@@ -15,5 +15,7 @@ export interface Pool {
 export interface AdjustedCB {
   shipId: string;
   year: number;
-  cbGco2eq: number;
+  cbBefore: number;
+  appliedBanked: number;
+  adjustedCb: number;
 }

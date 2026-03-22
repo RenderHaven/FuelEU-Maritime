@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PoolingUseCases } from '../../../core/application/PoolingUseCases';
+import { RouteUseCases } from '../../../core/application/RouteUseCases';
 import type { Pool, AdjustedCB } from '../../../core/domain/Pooling';
+import type { Route } from '../../../core/domain/Route';
 
 interface PoolingTabProps {
   poolingUseCases: PoolingUseCases;
+  routeUseCases: RouteUseCases;
 }
 
 interface MemberEntry {
@@ -13,7 +16,15 @@ interface MemberEntry {
   error: string | null;
 }
 
-const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases }) => {
+const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases }) => {
+  // Available routes for dropdown
+  const [routes, setRoutes] = useState<Route[]>([]);
+
+  useEffect(() => {
+    routeUseCases.getRoutes().then(data => {
+      setRoutes(data.sort((a, b) => a.routeId.localeCompare(b.routeId)));
+    }).catch(() => {});
+  }, []);
   const [year, setYear] = useState('2025');
   const [newShipId, setNewShipId] = useState('');
   const [members, setMembers] = useState<MemberEntry[]>([]);
@@ -67,7 +78,7 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases }) => {
   };
 
   const validMembers = members.filter(m => m.adjustedCB && !m.error);
-  const poolSum = validMembers.reduce((sum, m) => sum + (m.adjustedCB?.cbGco2eq ?? 0), 0);
+  const poolSum = validMembers.reduce((sum, m) => sum + (m.adjustedCB?.adjustedCb ?? 0), 0);
   const isPoolValid = validMembers.length >= 2 && poolSum >= 0;
 
   return (
@@ -87,14 +98,16 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases }) => {
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Ship / Route ID</label>
-            <input
-              type="text"
+            <select
               value={newShipId}
               onChange={(e) => setNewShipId(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleAddMember()}
-              placeholder="e.g. R001"
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-40"
-            />
+              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
+            >
+              <option value="">Select Route</option>
+              {routes
+                .filter(r => !members.some(m => m.shipId === r.routeId))
+                .map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
+            </select>
           </div>
           <button
             onClick={handleAddMember}
@@ -179,8 +192,8 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases }) => {
                       ) : member.error ? (
                         <span className="text-red-500 text-xs">{member.error}</span>
                       ) : (
-                        <span className={member.adjustedCB!.cbGco2eq >= 0 ? 'text-green-700' : 'text-red-700'}>
-                          {member.adjustedCB!.cbGco2eq.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        <span className={member.adjustedCB!.adjustedCb >= 0 ? 'text-green-700' : 'text-red-700'}>
+                          {member.adjustedCB!.adjustedCb.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </span>
                       )}
                     </td>
@@ -189,7 +202,7 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases }) => {
                         <span className="text-xs text-gray-400">...</span>
                       ) : member.error ? (
                         <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">Error</span>
-                      ) : member.adjustedCB!.cbGco2eq >= 0 ? (
+                      ) : member.adjustedCB!.adjustedCb >= 0 ? (
                         <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Surplus</span>
                       ) : (
                         <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">Deficit</span>

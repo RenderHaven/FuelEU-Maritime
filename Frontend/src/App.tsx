@@ -78,8 +78,8 @@ const App: React.FC = () => {
         <div className="relative">
           {activeTab === 'routes' && <RoutesTab routeUseCases={routeUseCases} />}
           {activeTab === 'compare' && <CompareTab routeUseCases={routeUseCases} />}
-          {activeTab === 'banking' && <BankingTab bankingUseCases={bankingUseCases} />}
-          {activeTab === 'pooling' && <PoolingTab poolingUseCases={poolingUseCases} />}
+          {activeTab === 'banking' && <BankingTab bankingUseCases={bankingUseCases} routeUseCases={routeUseCases} />}
+          {activeTab === 'pooling' && <PoolingTab poolingUseCases={poolingUseCases} routeUseCases={routeUseCases} />}
         </div>
       </main>
 
