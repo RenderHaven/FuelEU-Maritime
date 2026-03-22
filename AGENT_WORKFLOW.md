@@ -123,5 +123,31 @@
 **Validation / My Understanding:**
 
 * Reinforced that Prisma will exclusively be utilized inside `src/adapters/outbound` so that the Hexagonal purity of the Domain layer remains uncompromised.
+---
+
+### 4. Restructure Backend and Implement Routes
+
+**Prompt:**
+
+> "this is our new file structer so i want u to structer current backend file according to this"
+> "updated structer and asked to create other parts like adapters ports etc"
+> "lets build these now" (routes endpoints)
+
+---
+
+**Agent Output (Refactoring & Implementation):**
+
+* Created an implementation plan to restructure the code into the strict hexagonal folders: `entities`, `usecases`, `ports`, `inbound/http`, and `outbound/prisma`.
+* Extracted specific entities out of general logic files (e.g., separating `PoolMember` interface to fix namespace collisions).
+* Converted initial coarse-grained UseCase classes into individual files mapping to specific operations (`GetRoutes`, `SetBaseline`, `CompareRoutes`, etc).
+* Developed the `/routes` HTTP endpoints logically linking `inbound` logic to business `usecases`.
+* Implemented the `RouteRepositoryImpl` via Prisma to manage the Outbound Database Adapters.
+* Resolved Typescript validation issues (`npx tsc --noEmit` cleanly passing) and verified the module boundaries.
+
+---
+
+**Validation / My Understanding:**
+
+* Validated that modifying the directory tree did not break strict clean-architecture boundaries. The `usecases` accurately isolate the API routes (`inbound`) from the Prisma database queries (`outbound`) conforming to the ports pattern.
 
 ---
