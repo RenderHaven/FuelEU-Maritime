@@ -21,11 +21,13 @@ router.get('/', async (req: Request, res: Response) => {
 });
 
 router.post('/:id/baseline', async (req: Request, res: Response) => {
+
   try {
     const id = req.params.id as string;
     await setBaseline.execute(id);
     res.json({ message: `Baseline set to route: ${id}` });
   } catch (error: any) {
+    console.log("ERROR", error)
     if (error.message.includes('not found')) {
       res.status(404).json({ error: error.message });
     } else {

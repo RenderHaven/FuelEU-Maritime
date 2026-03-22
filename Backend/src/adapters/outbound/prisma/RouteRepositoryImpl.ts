@@ -24,7 +24,7 @@ export class RouteRepositoryImpl implements RouteRepository {
       where: { isBaseline: true },
       data: { isBaseline: false }
     });
-    
+
     await prisma.route.update({
       where: { id },
       data: { isBaseline: true }
