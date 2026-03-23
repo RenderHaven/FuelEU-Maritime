@@ -7,7 +7,6 @@ services:
 - type: web
   name: fueleu-backend
   env: node
-  plan: free
   autoDeploy: true
 
   buildCommand: npm install && npm run build
@@ -29,7 +28,6 @@ services:
 - type: web
   name: fueleu-frontend
   env: static
-  plan: free
   autoDeploy: true
 
   buildCommand: npm install && npm run build
