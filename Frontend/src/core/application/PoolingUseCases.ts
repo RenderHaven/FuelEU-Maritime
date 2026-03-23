@@ -11,6 +11,10 @@ export class PoolingUseCases {
     return this.poolingPort.getAdjustedCB(shipId, year);
   }
 
+  async getAdjustedCBsByYear(year: number): Promise<AdjustedCB[]> {
+    return this.poolingPort.getAdjustedCBsByYear(year);
+  }
+
   async createPool(year: number, shipIds: string[]): Promise<Pool> {
     return this.poolingPort.createPool(year, shipIds);
   }

@@ -1,7 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { RouteUseCases } from '../../../core/application/RouteUseCases';
-import type { ComparisonResponse, RouteComparison } from '../../../core/domain/Comparison';
-import type { Route } from '../../../core/domain/Route';
+import type { ComparisonResponse } from '../../../core/domain/Comparison';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 interface CompareTabProps {

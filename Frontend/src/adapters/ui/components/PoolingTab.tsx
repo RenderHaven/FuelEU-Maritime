@@ -2,67 +2,67 @@ import React, { useState, useEffect } from 'react';
 import { PoolingUseCases } from '../../../core/application/PoolingUseCases';
 import { RouteUseCases } from '../../../core/application/RouteUseCases';
 import type { Pool, AdjustedCB } from '../../../core/domain/Pooling';
-import type { Route } from '../../../core/domain/Route';
+
 
 interface PoolingTabProps {
   poolingUseCases: PoolingUseCases;
   routeUseCases: RouteUseCases;
 }
 
-interface MemberEntry {
-  shipId: string;
-  adjustedCB: AdjustedCB | null;
-  loading: boolean;
-  error: string | null;
-}
-
 const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases }) => {
-  // Available routes for dropdown
-  const [routes, setRoutes] = useState<Route[]>([]);
-
-  useEffect(() => {
-    routeUseCases.getRoutes().then(data => {
-      const sorted = data.sort((a, b) => a.routeId.localeCompare(b.routeId));
-      setRoutes(sorted);
-      if (sorted.length > 0) {
-        setYear(sorted[0].year.toString());
-      }
-    }).catch(() => { });
-  }, []);
   const [year, setYear] = useState('2025');
-  const [newShipId, setNewShipId] = useState('');
-  const [members, setMembers] = useState<MemberEntry[]>([]);
+  const [availableShips, setAvailableShips] = useState<AdjustedCB[]>([]);
+  const [shipsLoading, setShipsLoading] = useState(false);
+  const [shipsError, setShipsError] = useState<string | null>(null);
+
+  const [selectedShipIds, setSelectedShipIds] = useState<string[]>([]);
   const [poolResult, setPoolResult] = useState<Pool | null>(null);
   const [createLoading, setCreateLoading] = useState(false);
   const [feedback, setFeedback] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
 
-  const handleAddMember = async () => {
-    if (!newShipId || !year) return;
-    if (members.some(m => m.shipId === newShipId)) {
-      setFeedback({ type: 'error', message: `Ship ${newShipId} is already added` });
-      return;
-    }
-    setFeedback(null);
+  useEffect(() => {
+    routeUseCases.getRoutes().then(data => {
+      const sorted = data.sort((a, b) => a.routeId.localeCompare(b.routeId));
+      if (sorted.length > 0) {
+        setYear(sorted[0].year.toString());
+      }
+    }).catch(() => { });
+  }, [routeUseCases]);
 
-    const entry: MemberEntry = { shipId: newShipId, adjustedCB: null, loading: true, error: null };
-    setMembers(prev => [...prev, entry]);
-    setNewShipId('');
+  useEffect(() => {
+    let cancelled = false;
+    if (!year) return;
 
-    try {
-      const result = await poolingUseCases.getAdjustedCB(newShipId, parseInt(year));
-      setMembers(prev => prev.map(m =>
-        m.shipId === entry.shipId ? { ...m, adjustedCB: result, loading: false } : m
-      ));
-    } catch (err: any) {
-      setMembers(prev => prev.map(m =>
-        m.shipId === entry.shipId ? { ...m, error: err.message || 'Failed to fetch', loading: false } : m
-      ));
-    }
-  };
+    const loadShips = async () => {
+      try {
+        setShipsLoading(true);
+        setShipsError(null);
+        const results = await poolingUseCases.getAdjustedCBsByYear(parseInt(year));
+        if (!cancelled) {
+          setAvailableShips(results.sort((a, b) => a.shipId.localeCompare(b.shipId)));
+          setSelectedShipIds([]);
+          setPoolResult(null);
+        }
+      } catch (err: any) {
+        if (!cancelled) {
+          setShipsError(err.message || 'Failed to fetch ships for the selected year');
+          setAvailableShips([]);
+          setSelectedShipIds([]);
+        }
+      } finally {
+        if (!cancelled) setShipsLoading(false);
+      }
+    };
 
-  const handleRemoveMember = (shipId: string) => {
-    setMembers(prev => prev.filter(m => m.shipId !== shipId));
+    loadShips();
+    return () => { cancelled = true; };
+  }, [year, poolingUseCases]);
+
+  const toggleShipSelection = (shipId: string) => {
     setPoolResult(null);
+    setSelectedShipIds(prev =>
+      prev.includes(shipId) ? prev.filter(id => id !== shipId) : [...prev, shipId]
+    );
   };
 
   const handleCreatePool = async () => {
@@ -70,8 +70,7 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
     try {
       setCreateLoading(true);
       setFeedback(null);
-      const shipIds = validMembers.map(m => m.shipId);
-      const result = await poolingUseCases.createPool(parseInt(year), shipIds);
+      const result = await poolingUseCases.createPool(parseInt(year), selectedShipIds);
       setPoolResult(result);
       setFeedback({ type: 'success', message: 'Pool created successfully!' });
     } catch (err: any) {
@@ -81,48 +80,28 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
     }
   };
 
-  const validMembers = members.filter(m => m.adjustedCB && !m.error);
-  const poolSum = validMembers.reduce((sum, m) => sum + (m.adjustedCB?.adjustedCb ?? 0), 0);
+  const validMembers = availableShips.filter(s => selectedShipIds.includes(s.shipId));
+  const poolSum = validMembers.reduce((sum, m) => sum + m.adjustedCb, 0);
   const isPoolValid = validMembers.length >= 2 && poolSum >= 0;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Add Members Form */}
-      <div className="p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-blue-100 shadow-sm">
-        <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-4">Build Compliance Pool</h3>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col gap-1">
+      {/* Year Selection Form */}
+      <div className="p-4 sm:p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-blue-100 shadow-sm flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-2">Build Compliance Pool</h3>
+          <p className="text-xs text-blue-900/60 max-w-lg mb-4">
+            Select a year to view all available ships and their Adjusted CB. Pooling allows surplus ships to offset deficit ships.
+          </p>
+          <div className="flex flex-col gap-1 w-32">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Year</label>
             <input
               type="number"
               value={year}
-              onChange={(e) => { setYear(e.target.value); setMembers([]); setPoolResult(null); }}
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-28"
+              onChange={(e) => setYear(e.target.value)}
+              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none"
             />
           </div>
-          <div className="flex flex-col gap-1">
-            <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Ship / Route ID</label>
-            <select
-              value={newShipId}
-              onChange={(e) => setNewShipId(e.target.value)}
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
-            >
-              <option value="">Select Route</option>
-              {Array.from(new Map(
-                routes
-                  .filter(r => r.year.toString() === year)
-                  .filter(r => !members.some(m => m.shipId === r.routeId))
-                  .map(r => [r.routeId, r] as [string, Route])
-              ).values()).map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
-            </select>
-          </div>
-          <button
-            onClick={handleAddMember}
-            disabled={!newShipId || !year}
-            className="px-5 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-lg text-sm font-bold uppercase tracking-wider shadow-lg shadow-indigo-200 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            Add Member
-          </button>
         </div>
       </div>
 
@@ -136,23 +115,18 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
         </div>
       )}
 
-      {/* Empty State */}
-      {members.length === 0 && (
-        <div className="p-12 text-center animate-in fade-in slide-in-from-bottom-5 duration-700">
-          <div className="max-w-md mx-auto p-8 rounded-3xl bg-white border border-blue-100 shadow-2xl shadow-blue-900/10">
-            <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <svg className="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            </div>
-            <h2 className="text-2xl font-bold text-blue-900 mb-2">Vessel Pooling</h2>
-            <p className="text-gray-500">Add ships above to build a compliance pool. Pooling allows surplus ships to offset deficit ships (Article 21).</p>
-          </div>
+      {shipsLoading && (
+        <div className="py-12 text-center text-blue-500 font-medium animate-pulse">Loading ships for {year}...</div>
+      )}
+
+      {shipsError && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-medium">
+          {shipsError}
         </div>
       )}
 
       {/* Members List */}
-      {members.length > 0 && (
+      {!shipsLoading && !shipsError && availableShips.length > 0 && (
         <div className="space-y-4">
           {/* Pool Sum Indicator */}
           <div className={`p-5 rounded-2xl border shadow-lg ${poolSum >= 0
@@ -161,85 +135,88 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
             }`}>
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Pool Sum (Adjusted CB)</p>
+                <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Selected Pool Sum (Adjusted CB)</p>
                 <p className={`text-3xl font-extrabold font-mono mt-1 ${poolSum >= 0 ? 'text-green-700' : 'text-red-700'}`}>
                   {poolSum.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-base font-normal text-gray-500">gCO₂eq</span>
                 </p>
+                <p className="text-xs text-gray-500 mt-1">{validMembers.length} ships selected</p>
               </div>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${poolSum >= 0
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${validMembers.length < 2
+                ? 'bg-gray-100 text-gray-600 border-gray-200'
+                : poolSum >= 0
                 ? 'bg-green-100 text-green-700 border-green-200'
                 : 'bg-red-100 text-red-700 border-red-200'
                 }`}>
-                {poolSum >= 0 ? '✓ Valid Pool' : '✗ Invalid — Sum < 0'}
+                {validMembers.length < 2 ? 'Need ≥ 2 Ships' : poolSum >= 0 ? '✓ Valid Pool' : '✗ Invalid — Sum < 0'}
               </span>
             </div>
           </div>
 
+          <div className="flex justify-end gap-2 text-xs">
+             <button onClick={() => setSelectedShipIds(availableShips.map(s => s.shipId))} className="text-blue-600 hover:text-blue-800 font-medium">Select All</button>
+             <span className="text-gray-300">|</span>
+             <button onClick={() => setSelectedShipIds([])} className="text-blue-600 hover:text-blue-800 font-medium">Clear All</button>
+          </div>
+
           {/* Members Table */}
-          <div className="overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
+            <table className="w-full text-left border-collapse min-w-[620px]">
               <thead>
-                <tr className="bg-blue-50/50">
-                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest">Ship ID</th>
-                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Raw CB (gCO₂eq)</th>
-                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Adjusted CB (gCO₂eq)</th>
-                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-center">Status</th>
-                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-center">Action</th>
+                <tr className="bg-blue-50/50 border-b border-blue-100">
+                  <th className="px-4 py-3 w-12 text-center text-xs font-bold text-blue-900"></th>
+                  <th className="px-4 py-3 text-xs font-bold text-blue-900 uppercase tracking-widest">Ship ID</th>
+                  <th className="px-4 py-3 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Raw CB (gCO₂eq)</th>
+                  <th className="px-4 py-3 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Applied Banked</th>
+                  <th className="px-4 py-3 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Adjusted CB (gCO₂eq)</th>
+                  <th className="px-4 py-3 text-xs font-bold text-blue-900 uppercase tracking-widest text-center">Status</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-blue-50">
-                {members.map((member) => (
-                  <tr key={member.shipId} className="hover:bg-blue-50/30 transition-colors">
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900 font-mono">{member.shipId}</td>
-                    <td className="px-6 py-4 text-sm font-mono text-right">
-                      {member.loading ? (
-                        <span className="text-gray-400">...</span>
-                      ) : member.error ? (
-                        <span className="text-red-500 text-xs">—</span>
-                      ) : (
-                        <span className={member.adjustedCB!.cbBefore >= 0 ? 'text-green-700' : 'text-red-700'}>
-                          {member.adjustedCB!.cbBefore.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                {availableShips.map((ship) => {
+                  const isSelected = selectedShipIds.includes(ship.shipId);
+                  const isSurplus = ship.adjustedCb >= 0;
+                  return (
+                    <tr 
+                      key={ship.shipId} 
+                      className={`transition-colors cursor-pointer ${isSelected ? 'bg-blue-50/30' : 'hover:bg-gray-50'}`}
+                      onClick={() => toggleShipSelection(ship.shipId)}
+                    >
+                      <td className="px-4 py-3 text-center">
+                        <input 
+                          type="checkbox" 
+                          checked={isSelected}
+                          onChange={() => {}} // Handled by tr onClick
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
+                        />
+                      </td>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 font-mono">{ship.shipId}</td>
+                      <td className="px-4 py-3 text-sm font-mono text-right text-gray-500">
+                        {ship.cbBefore.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-mono text-right text-blue-500">
+                        {ship.appliedBanked > 0 ? `+${ship.appliedBanked.toLocaleString(undefined, { maximumFractionDigits: 2 })}` : '0'}
+                      </td>
+                      <td className="px-4 py-3 text-sm font-mono text-right font-semibold">
+                        <span className={isSurplus ? 'text-green-700' : 'text-red-700'}>
+                          {ship.adjustedCb.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-mono text-right">
-                      {member.loading ? (
-                        <span className="text-gray-400">Loading...</span>
-                      ) : member.error ? (
-                        <span className="text-red-500 text-xs">{member.error}</span>
-                      ) : (
-                        <span className={member.adjustedCB!.adjustedCb >= 0 ? 'text-green-700' : 'text-red-700'}>
-                          {member.adjustedCB!.adjustedCb.toLocaleString(undefined, { maximumFractionDigits: 2 })}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      {member.loading ? (
-                        <span className="text-xs text-gray-400">...</span>
-                      ) : member.error ? (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">Error</span>
-                      ) : member.adjustedCB!.adjustedCb >= 0 ? (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Surplus</span>
-                      ) : (
-                        <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">Deficit</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <button
-                        onClick={() => handleRemoveMember(member.shipId)}
-                        className="px-3 py-1 text-xs font-bold text-red-600 uppercase tracking-wider hover:bg-red-50 rounded-lg transition-all border border-red-200"
-                      >
-                        Remove
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                      </td>
+                      <td className="px-4 py-3 text-center">
+                        {isSurplus ? (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-green-100 text-green-700 rounded-full text-xs font-bold border border-green-200">Surplus</span>
+                        ) : (
+                          <span className="inline-flex items-center px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-xs font-bold border border-red-200">Deficit</span>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
 
           {/* Create Pool Button */}
-          <div className="flex justify-end">
+          <div className="flex justify-end mt-6">
             <button
               onClick={handleCreatePool}
               disabled={createLoading || !isPoolValid}
@@ -251,9 +228,16 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
         </div>
       )}
 
+      {/* Empty State when no ships available */}
+      {!shipsLoading && !shipsError && availableShips.length === 0 && (
+        <div className="py-12 text-center text-gray-500">
+          No compliance data found for {year}.
+        </div>
+      )}
+
       {/* Pool Result */}
       {poolResult && (
-        <div className="p-6 bg-white rounded-2xl border border-indigo-100 shadow-xl shadow-indigo-900/5 animate-in fade-in slide-in-from-bottom-5 duration-500">
+        <div className="p-6 bg-white rounded-2xl border border-indigo-100 shadow-xl shadow-indigo-900/5 animate-in fade-in slide-in-from-bottom-5 duration-500 mt-8">
           <h3 className="text-sm font-bold text-indigo-900 uppercase tracking-wider mb-4">Pool Created — Results</h3>
           <div className="overflow-hidden rounded-xl border border-indigo-100">
             <table className="w-full text-left border-collapse">

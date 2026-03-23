@@ -150,32 +150,31 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      {/* Selection Form */}
-      <div className="p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-blue-100 shadow-sm">
+      <div className="p-4 sm:p-6 bg-white/50 backdrop-blur-sm rounded-2xl border border-blue-100 shadow-sm">
         <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-4">Select Ship & Year</h3>
-        <div className="flex flex-wrap gap-4 items-end">
-          <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap gap-3 sm:gap-4 items-end">
+          <div className="flex flex-col gap-1 flex-1 min-w-[150px]">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Ship / Route ID</label>
             <select
               value={shipId}
               onChange={(e) => setShipId(e.target.value)}
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
+              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-48"
             >
               <option value="">Select Route</option>
               {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col gap-1 flex-1 min-w-[100px] sm:flex-none">
             <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Year</label>
             <input
               type="number"
               value={year}
               onChange={(e) => setYear(e.target.value)}
-              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-28"
+              className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-full sm:w-28"
             />
           </div>
           {lookupLoading && (
-            <span className="text-sm text-blue-500 font-medium animate-pulse">Loading data...</span>
+            <span className="text-sm text-blue-500 font-medium animate-pulse w-full sm:w-auto mt-2 sm:mt-0">Loading data...</span>
           )}
         </div>
       </div>
@@ -389,13 +388,13 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
           </div>
 
           {/* Banking Records Table */}
-          <div className="p-6 bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
+          <div className="p-4 sm:p-6 bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
             <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wider mb-4">Banking Records</h3>
             {bankRecords.length === 0 ? (
               <p className="text-sm text-gray-400 text-center py-6">No banking records found for this ship and year.</p>
             ) : (
               <div className="overflow-x-auto">
-                <table className="w-full text-sm">
+                <table className="w-full text-sm min-w-[480px]">
                   <thead>
                     <tr className="border-b border-blue-100">
                       <th className="text-left py-2.5 px-3 text-xs font-bold text-blue-900/60 uppercase tracking-wider">ID</th>

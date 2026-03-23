@@ -87,7 +87,7 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ routeUseCases }) => {
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-wrap gap-4 p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-blue-100 shadow-sm">
+      <div className="flex flex-wrap gap-3 p-4 bg-white/50 backdrop-blur-sm rounded-xl border border-blue-100 shadow-sm">
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold text-blue-900/60 uppercase tracking-wider">Vessel Type</label>
           <select
@@ -136,8 +136,8 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ routeUseCases }) => {
           </div>
         </div>
       ) : (
-        <div className="overflow-hidden bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
-          <table className="w-full text-left border-collapse">
+        <div className="overflow-x-auto bg-white rounded-2xl border border-blue-100 shadow-xl shadow-blue-900/5">
+          <table className="w-full text-left border-collapse min-w-[700px]">
             <thead>
               <tr className="bg-blue-50/50">
                 <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest">RouteID</th>

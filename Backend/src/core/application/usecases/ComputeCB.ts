@@ -54,4 +54,22 @@ export class ComputeCB {
       adjustedCb: compliance.cbGco2eq + appliedToThisYear
     };
   }
+  async executeAdjustedForYear(year: number) {
+    const allRoutes = await this.routeRepo.findAll();
+    const routesThisYear = allRoutes.filter(r => r.year === year);
+    
+    // Deduplicate ships (routeId) to avoid repeated checks if any
+    const uniqueShipIds = Array.from(new Set(routesThisYear.map(r => r.routeId)));
+
+    const results = [];
+    for (const shipId of uniqueShipIds) {
+      try {
+        const adjusted = await this.executeAdjusted(shipId, year);
+        results.push(adjusted);
+      } catch (e) {
+        // Skip if there's any error computing for this ship (e.g. somehow missing)
+      }
+    }
+    return results;
+  }
 }

@@ -36,12 +36,17 @@ router.get('/adjusted-cb', async (req: Request, res: Response) => {
     const shipId = req.query.shipId as string;
     const year = parseInt(req.query.year as string, 10);
 
-    if (!shipId || isNaN(year)) {
-      return res.status(400).json({ error: 'shipId and year are required parameters' });
+    if (isNaN(year)) {
+      return res.status(400).json({ error: 'year is a required parameter' });
     }
 
-    const adjusted = await computeCb.executeAdjusted(shipId, year);
-    res.json(adjusted);
+    if (shipId) {
+      const adjusted = await computeCb.executeAdjusted(shipId, year);
+      res.json(adjusted);
+    } else {
+      const adjustedList = await computeCb.executeAdjustedForYear(year);
+      res.json(adjustedList);
+    }
   } catch (error: any) {
     if (error.message.includes('not found')) {
       res.status(404).json({ error: error.message });

@@ -13,6 +13,15 @@ export class PoolingApiAdapter implements PoolingPort {
     return response.json();
   }
 
+  async getAdjustedCBsByYear(year: number): Promise<AdjustedCB[]> {
+    const response = await fetch(`${API_BASE_URL}/compliance/adjusted-cb?year=${year}`);
+    if (!response.ok) {
+      const data = await response.json().catch(() => ({}));
+      throw new Error(data.error || "Failed to fetch adjusted compliance balances for year");
+    }
+    return response.json();
+  }
+
   async createPool(year: number, shipIds: string[]): Promise<Pool> {
     const response = await fetch(`${API_BASE_URL}/pools`, {
       method: "POST",
