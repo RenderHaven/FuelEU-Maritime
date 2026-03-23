@@ -13,22 +13,30 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
   // Available routes for dropdown
   const [routes, setRoutes] = useState<Route[]>([]);
 
-  useEffect(() => {
-    routeUseCases.getRoutes().then(data => {
-      // Deduplicate by id and sort
-      const uniqueById = Array.from(new Map(data.map(r => [r.id, r])).values());
-      setRoutes(uniqueById.sort((a, b) => a.id.localeCompare(b.id)));
-    }).catch(() => { });
-  }, []);
+
 
   // Lookup state
   const [shipId, setShipId] = useState('');
-  const [year, setYear] = useState('2025');
+  const [year, setYear] = useState('2023');
   const [balance, setBalance] = useState<ComplianceBalance | null>(null);
   const [adjustedCb, setAdjustedCb] = useState<AdjustedCB | null>(null);
   const [bankRecords, setBankRecords] = useState<BankRecord[]>([]);
   const [lookupLoading, setLookupLoading] = useState(false);
   const [lookupError, setLookupError] = useState<string | null>(null);
+
+  useEffect(() => {
+    routeUseCases.getRoutes().then(data => {
+      // Deduplicate by id and sort
+      const uniqueById = Array.from(new Map(data.map(r => [r.routeId, r])).values());
+      const sorted = uniqueById.sort((a, b) => a.routeId.localeCompare(b.routeId));
+      setRoutes(sorted);
+
+      if (sorted.length > 0) {
+        setShipId(sorted[0].routeId);
+        setYear(sorted[0].year.toString());
+      }
+    }).catch(() => { });
+  }, []);
 
   // Bank action state
   const [bankAmount, setBankAmount] = useState('');
@@ -154,7 +162,7 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
               className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
             >
               <option value="">Select Route</option>
-              {routes.map(r => <option key={r.id} value={r.id}>{r.id} — {r.vesselType}</option>)}
+              {routes.map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
             </select>
           </div>
           <div className="flex flex-col gap-1">
@@ -190,8 +198,8 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
       {/* Feedback Banner */}
       {feedback && (
         <div className={`p-4 rounded-xl border text-sm font-medium ${feedback.type === 'success'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : 'bg-red-50 border-red-200 text-red-800'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'
           }`}>
           {feedback.message}
         </div>
@@ -219,8 +227,8 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Raw CB */}
             <div className={`p-5 rounded-2xl border shadow-lg ${isSurplus
-                ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-green-900/5'
-                : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200 shadow-red-900/5'
+              ? 'bg-gradient-to-br from-green-50 to-emerald-50 border-green-200 shadow-green-900/5'
+              : 'bg-gradient-to-br from-red-50 to-orange-50 border-red-200 shadow-red-900/5'
               }`}>
               <p className="text-xs font-bold uppercase tracking-wider text-gray-500">CB (Raw)</p>
               <p className={`text-3xl font-extrabold font-mono mt-1 ${isSurplus ? 'text-green-700' : 'text-red-700'}`}>
@@ -228,8 +236,8 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
               </p>
               <p className="text-xs text-gray-400 mt-1">gCO₂eq · {balance.shipId} · {balance.year}</p>
               <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 mt-2 rounded-full text-xs font-bold uppercase tracking-wider border ${isSurplus
-                  ? 'bg-green-100 text-green-700 border-green-200'
-                  : 'bg-red-100 text-red-700 border-red-200'
+                ? 'bg-green-100 text-green-700 border-green-200'
+                : 'bg-red-100 text-red-700 border-red-200'
                 }`}>
                 {isSurplus ? '✓ Surplus' : '✗ Deficit'}
               </span>
@@ -400,15 +408,15 @@ const BankingTab: React.FC<BankingTabProps> = ({ bankingUseCases, routeUseCases 
                   <tbody>
                     {bankRecords.map((record) => (
                       <tr key={record.id} className="border-b border-gray-50 hover:bg-blue-50/50 transition-colors">
-                        <td className="py-2.5 px-3 font-mono text-xs text-gray-500">{record.id}</td>
+                        <td className="py-2.5 px-3 font-mono text-xs text-gray-500">{record.shipId}</td>
                         <td className="py-2.5 px-3 text-gray-700">{record.year}</td>
                         <td className={`py-2.5 px-3 text-right font-mono font-semibold ${record.amountGco2eq >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {record.amountGco2eq >= 0 ? '+' : ''}{record.amountGco2eq.toLocaleString(undefined, { maximumFractionDigits: 2 })}
                         </td>
                         <td className="py-2.5 px-3">
                           <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-bold ${record.amountGco2eq >= 0
-                              ? 'bg-green-100 text-green-700'
-                              : 'bg-orange-100 text-orange-700'
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-orange-100 text-orange-700'
                             }`}>
                             {record.amountGco2eq >= 0 ? 'Banked' : 'Applied'}
                           </span>

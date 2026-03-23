@@ -22,10 +22,12 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
 
   useEffect(() => {
     routeUseCases.getRoutes().then(data => {
-      // Deduplicate by id and sort
-      const uniqueById = Array.from(new Map(data.map(r => [r.id, r])).values());
-      setRoutes(uniqueById.sort((a, b) => a.id.localeCompare(b.id)));
-    }).catch(() => {});
+      const sorted = data.sort((a, b) => a.routeId.localeCompare(b.routeId));
+      setRoutes(sorted);
+      if (sorted.length > 0) {
+        setYear(sorted[0].year.toString());
+      }
+    }).catch(() => { });
   }, []);
   const [year, setYear] = useState('2025');
   const [newShipId, setNewShipId] = useState('');
@@ -106,9 +108,12 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
               className="px-3 py-2 bg-white border border-blue-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none w-48"
             >
               <option value="">Select Route</option>
-              {routes
-                .filter(r => !members.some(m => m.shipId === r.id))
-                .map(r => <option key={r.id} value={r.id}>{r.id} — {r.vesselType}</option>)}
+              {Array.from(new Map(
+                routes
+                  .filter(r => r.year.toString() === year)
+                  .filter(r => !members.some(m => m.shipId === r.routeId))
+                  .map(r => [r.routeId, r] as [string, Route])
+              ).values()).map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
             </select>
           </div>
           <button
@@ -123,11 +128,10 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
 
       {/* Feedback Banner */}
       {feedback && (
-        <div className={`p-4 rounded-xl border text-sm font-medium ${
-          feedback.type === 'success'
-            ? 'bg-green-50 border-green-200 text-green-800'
-            : 'bg-red-50 border-red-200 text-red-800'
-        }`}>
+        <div className={`p-4 rounded-xl border text-sm font-medium ${feedback.type === 'success'
+          ? 'bg-green-50 border-green-200 text-green-800'
+          : 'bg-red-50 border-red-200 text-red-800'
+          }`}>
           {feedback.message}
         </div>
       )}
@@ -151,11 +155,10 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
       {members.length > 0 && (
         <div className="space-y-4">
           {/* Pool Sum Indicator */}
-          <div className={`p-5 rounded-2xl border shadow-lg ${
-            poolSum >= 0
-              ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-900/5'
-              : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 shadow-red-900/5'
-          }`}>
+          <div className={`p-5 rounded-2xl border shadow-lg ${poolSum >= 0
+            ? 'bg-gradient-to-r from-green-50 to-emerald-50 border-green-200 shadow-green-900/5'
+            : 'bg-gradient-to-r from-red-50 to-orange-50 border-red-200 shadow-red-900/5'
+            }`}>
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-gray-500">Pool Sum (Adjusted CB)</p>
@@ -163,11 +166,10 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
                   {poolSum.toLocaleString(undefined, { maximumFractionDigits: 2 })} <span className="text-base font-normal text-gray-500">gCO₂eq</span>
                 </p>
               </div>
-              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${
-                poolSum >= 0
-                  ? 'bg-green-100 text-green-700 border-green-200'
-                  : 'bg-red-100 text-red-700 border-red-200'
-              }`}>
+              <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider border shadow-sm ${poolSum >= 0
+                ? 'bg-green-100 text-green-700 border-green-200'
+                : 'bg-red-100 text-red-700 border-red-200'
+                }`}>
                 {poolSum >= 0 ? '✓ Valid Pool' : '✗ Invalid — Sum < 0'}
               </span>
             </div>
@@ -179,6 +181,7 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
               <thead>
                 <tr className="bg-blue-50/50">
                   <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest">Ship ID</th>
+                  <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Raw CB (gCO₂eq)</th>
                   <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-right">Adjusted CB (gCO₂eq)</th>
                   <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-center">Status</th>
                   <th className="px-6 py-4 text-xs font-bold text-blue-900 uppercase tracking-widest text-center">Action</th>
@@ -188,6 +191,17 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
                 {members.map((member) => (
                   <tr key={member.shipId} className="hover:bg-blue-50/30 transition-colors">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900 font-mono">{member.shipId}</td>
+                    <td className="px-6 py-4 text-sm font-mono text-right">
+                      {member.loading ? (
+                        <span className="text-gray-400">...</span>
+                      ) : member.error ? (
+                        <span className="text-red-500 text-xs">—</span>
+                      ) : (
+                        <span className={member.adjustedCB!.cbBefore >= 0 ? 'text-green-700' : 'text-red-700'}>
+                          {member.adjustedCB!.cbBefore.toLocaleString(undefined, { maximumFractionDigits: 2 })}
+                        </span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 text-sm font-mono text-right">
                       {member.loading ? (
                         <span className="text-gray-400">Loading...</span>
