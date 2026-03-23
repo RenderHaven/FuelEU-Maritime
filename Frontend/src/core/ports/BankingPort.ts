@@ -1,7 +1,9 @@
-import type { ComplianceBalance } from "../domain/Banking";
+import type { ComplianceBalance, BankRecord, BankResult, ApplyResult, AdjustedCB } from "../domain/Banking";
 
 export interface BankingPort {
   getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalance>;
-  bankSurplus(shipId: string, year: number, amount: number): Promise<void>;
-  applyBankedSurplus(shipId: string, year: number, amount: number): Promise<void>;
+  getAdjustedCb(shipId: string, year: number): Promise<AdjustedCB>;
+  getBankingRecords(shipId: string, year: number): Promise<BankRecord[]>;
+  bankSurplus(shipId: string, year: number, amount: number): Promise<BankResult>;
+  applyBankedSurplus(shipId: string, year: number, amount: number): Promise<ApplyResult>;
 }

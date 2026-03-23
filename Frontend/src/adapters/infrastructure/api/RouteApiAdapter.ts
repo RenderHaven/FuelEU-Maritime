@@ -2,7 +2,7 @@ import type { RoutePort } from "../../../core/ports/RoutePort";
 import type { Route } from "../../../core/domain/Route";
 import type { ComparisonResponse } from "../../../core/domain/Comparison";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.API_BASE_URL || "http://localhost:3000";
 
 export class RouteApiAdapter implements RoutePort {
   async getRoutes(): Promise<Route[]> {

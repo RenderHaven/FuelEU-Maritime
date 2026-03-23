@@ -186,7 +186,7 @@ const CompareTab: React.FC<CompareTabProps> = ({ routeUseCases }) => {
           </svg>
         </div>
         <h2 className="text-2xl font-bold text-red-900 mb-2">Comparison Error</h2>
-        <p className="text-gray-500">{error}</p>
+        <p className="text-gray-500">Failed to fetch comparison data</p>
       </div>
     </div>
   );
@@ -239,29 +239,29 @@ const CompareTab: React.FC<CompareTabProps> = ({ routeUseCases }) => {
             {data.comparisons
               .sort((a, b) => a.routeId.localeCompare(b.routeId))
               .map((route) => (
-              <tr key={route.id} className="hover:bg-blue-50/30 transition-colors">
-                <td className="px-6 py-4 text-sm font-medium text-gray-900">{route.routeId}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{route.vesselType}</td>
-                <td className="px-6 py-4 text-sm text-gray-700">{route.fuelType}</td>
-                <td className="px-6 py-4 text-sm text-blue-700 font-mono text-right">{route.ghgIntensity.toFixed(2)}</td>
-                <td className="px-6 py-4 text-sm font-mono text-right">
-                  <span className={route.percentDiff > 0 ? 'text-red-600' : 'text-green-600'}>
-                    {route.percentDiff > 0 ? '+' : ''}{route.percentDiff.toFixed(2)}%
-                  </span>
-                </td>
-                <td className="px-6 py-4 text-center">
-                  {route.compliant ? (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200 shadow-sm">
-                      <CheckCircle className="w-3.5 h-3.5" /> Yes
+                <tr key={route.id} className="hover:bg-blue-50/30 transition-colors">
+                  <td className="px-6 py-4 text-sm font-medium text-gray-900">{route.routeId}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{route.vesselType}</td>
+                  <td className="px-6 py-4 text-sm text-gray-700">{route.fuelType}</td>
+                  <td className="px-6 py-4 text-sm text-blue-700 font-mono text-right">{route.ghgIntensity.toFixed(2)}</td>
+                  <td className="px-6 py-4 text-sm font-mono text-right">
+                    <span className={route.percentDiff > 0 ? 'text-red-600' : 'text-green-600'}>
+                      {route.percentDiff > 0 ? '+' : ''}{route.percentDiff.toFixed(2)}%
                     </span>
-                  ) : (
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase tracking-wider border border-red-200 shadow-sm">
-                      <XCircle className="w-3.5 h-3.5" /> No
-                    </span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                  </td>
+                  <td className="px-6 py-4 text-center">
+                    {route.compliant ? (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold uppercase tracking-wider border border-green-200 shadow-sm">
+                        <CheckCircle className="w-3.5 h-3.5" /> Yes
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold uppercase tracking-wider border border-red-200 shadow-sm">
+                        <XCircle className="w-3.5 h-3.5" /> No
+                      </span>
+                    )}
+                  </td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

@@ -9,7 +9,7 @@ datasource db {
 
 model Route {
   id              String   @id @default(uuid()) @db.Uuid
-  routeId         String   @unique @map("route_id")
+  routeId         String   @map("route_id")
   vesselType      String   @map("vessel_type")
   fuelType        String   @map("fuel_type")
   year            Int
@@ -18,7 +18,8 @@ model Route {
   distance        Float
   totalEmissions  Float    @map("total_emissions")
   isBaseline      Boolean  @default(false) @map("is_baseline")
-
+  
+  @@unique([routeId, year])
   @@map("routes")
 }
 

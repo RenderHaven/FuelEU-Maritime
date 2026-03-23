@@ -50,7 +50,7 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ routeUseCases }) => {
         const matchYear = yearFilter === '' || route.year.toString() === yearFilter;
         return matchVessel && matchFuel && matchYear;
       })
-      .sort((a, b) => a.routeId.localeCompare(b.routeId));
+      .sort((a, b) => a.id.localeCompare(b.id));
   }, [routes, vesselFilter, fuelFilter, yearFilter]);
 
   const uniqueVessels = Array.from(new Set(routes.map(r => r.vesselType)));
@@ -169,7 +169,7 @@ const RoutesTab: React.FC<RoutesTabProps> = ({ routeUseCases }) => {
                       </span>
                     ) : (
                       <button 
-                        onClick={() => handleSetBaseline(route.routeId)}
+                        onClick={() => handleSetBaseline(route.id)}
                         className="px-3 py-1 text-xs font-bold text-blue-700 uppercase tracking-wider hover:bg-blue-100 rounded-lg transition-all border border-blue-200"
                       >
                         Set Baseline

@@ -11,8 +11,12 @@ export class RouteRepositoryImpl implements RouteRepository {
     return prisma.route.findUnique({ where: { id } });
   }
 
-  async findByRouteId(routeId: string): Promise<Route | null> {
-    return prisma.route.findUnique({ where: { routeId } });
+  async findByRouteIdAndYear(routeId: string, year: number): Promise<Route | null> {
+    return prisma.route.findUnique({
+      where: {
+        routeId_year: { routeId, year }
+      }
+    });
   }
 
   async findBaseline(): Promise<Route | null> {

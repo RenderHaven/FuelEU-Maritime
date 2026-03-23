@@ -8,12 +8,16 @@ export class ComputeCB {
     private routeRepo: RouteRepository,
     private complianceRepo: ComplianceRepository,
     private bankRepo: BankingRepository
-  ) {}
+  ) { }
 
   async executeSnapshot(shipId: string, year: number) {
-    let route = await this.routeRepo.findByRouteId(shipId);
+    let route = await this.routeRepo.findByRouteIdAndYear(shipId, year);
     if (!route) {
       throw new Error('Route/Ship not found with identifier ' + shipId);
+    }
+    
+    if (route.year !== year) {
+      throw new Error(`Route found for ${shipId} is for year ${route.year}, not requested year ${year}`);
     }
 
     const cbGco2eq = FuelEUCalculator.calculateComplianceBalance(route.ghgIntensity, route.fuelConsumption);
@@ -32,9 +36,9 @@ export class ComputeCB {
 
   async executeAdjusted(shipId: string, year: number) {
     const compliance = await this.executeSnapshot(shipId, year);
-    
+
     const entriesThisYear = await this.bankRepo.findByShipAndYear(shipId, year);
-    
+
     let appliedToThisYear = 0;
     for (const entry of entriesThisYear) {
       if (entry.amountGco2eq < 0) {

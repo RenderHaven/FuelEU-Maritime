@@ -316,3 +316,35 @@
 
 ---
 
+### 10. Enhancing Banking Tab & Fixing Backend Year Validation
+
+**Prompt:**
+
+> "banking tab is lacking features. not showing cb_before and cb_after etc. not showing banked cb etc. for refrence see documentation.md"
+> "so the issu is that we r computing cb without taking year in note inside computeCb of backend see documentation.md for refrence"
+> "update agent workflow .md"
+
+---
+
+**Agent Output (Feature Completion & Bug Fix):**
+
+* **Frontend Banking Tab Enhancements:**
+  * Updated Domain types (`BankResult`, `ApplyResult`, `AdjustedCB`) to rigorously match backend responses.
+  * Extended `BankingPort` and `BankingUseCases` with `getAdjustedCb` and `getBankingRecords`.
+  * Implemented corresponding infrastructure API calls in `BankingApiAdapter`.
+  * Redesigned the `BankingTab` UI component:
+    * Replaced the single basic KPI with a 3-column structured KPI section: Raw CB, Adjusted CB (showing `cb_before`, `appliedBanked`, and `adjusted_cb`), and a Total Banked Summary.
+    * Integrated a visual result card appearing after a surplus application to display the `cb_before` → `applied` → `cb_after` transition.
+    * Added a "Banking Records" table to display the historical ledger of banked/applied surpluses with respective dates and amounts.
+
+* **Backend Year Validation Fix (`ComputeCB.ts`):**
+  * Investigated a domain logic bug where calculating compliance was ignoring the specific year of the `Route` record.
+  * Because prisma `routeId` is `@unique`, `findByRouteId(shipId)` securely fetches the single route representing the ship for its active year.
+  * Added validation in `executeSnapshot(shipId, year)` to proactively `throw` if the requested calculation year deviates from the route's valid year, preventing the system from falsely writing future/past compliance records derived from mismatched fuel consumption data.
+
+---
+
+**Validation / My Understanding:**
+
+* Validated that the architectural structure fully supports the missing features because the backend was already returning the correct payload structures (e.g. `cb_before`); the frontend merely needed updated interfaces and UI adapters to seamlessly display them.
+* Confirmed the `ComputeCB` bug fix ensures temporal data integrity across the FuelEU domain formulas.

@@ -22,7 +22,9 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
 
   useEffect(() => {
     routeUseCases.getRoutes().then(data => {
-      setRoutes(data.sort((a, b) => a.routeId.localeCompare(b.routeId)));
+      // Deduplicate by id and sort
+      const uniqueById = Array.from(new Map(data.map(r => [r.id, r])).values());
+      setRoutes(uniqueById.sort((a, b) => a.id.localeCompare(b.id)));
     }).catch(() => {});
   }, []);
   const [year, setYear] = useState('2025');
@@ -105,8 +107,8 @@ const PoolingTab: React.FC<PoolingTabProps> = ({ poolingUseCases, routeUseCases 
             >
               <option value="">Select Route</option>
               {routes
-                .filter(r => !members.some(m => m.shipId === r.routeId))
-                .map(r => <option key={r.routeId} value={r.routeId}>{r.routeId} — {r.vesselType}</option>)}
+                .filter(r => !members.some(m => m.shipId === r.id))
+                .map(r => <option key={r.id} value={r.id}>{r.id} — {r.vesselType}</option>)}
             </select>
           </div>
           <button
