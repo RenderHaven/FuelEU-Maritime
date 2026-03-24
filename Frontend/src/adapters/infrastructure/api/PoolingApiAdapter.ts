@@ -1,7 +1,7 @@
 import type { PoolingPort } from "../../../core/ports/PoolingPort";
 import type { Pool, AdjustedCB } from "../../../core/domain/Pooling";
 
-const API_BASE_URL = import.meta.env.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export class PoolingApiAdapter implements PoolingPort {
   async getAdjustedCB(shipId: string, year: number): Promise<AdjustedCB> {

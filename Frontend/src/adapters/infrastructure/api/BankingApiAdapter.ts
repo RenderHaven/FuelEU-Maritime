@@ -1,7 +1,7 @@
 import type { BankingPort } from "../../../core/ports/BankingPort";
 import type { ComplianceBalance, BankRecord, BankResult, ApplyResult, AdjustedCB } from "../../../core/domain/Banking";
 
-const API_BASE_URL = import.meta.env.API_BASE_URL || "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:3000";
 
 export class BankingApiAdapter implements BankingPort {
   async getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalance> {
