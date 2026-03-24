@@ -4,6 +4,10 @@ A full-stack, enterprise-grade compliance management platform designed to help s
 
 ---
 
+## 🔗 Live Demo
+
+https://fueleu-maritime-1.onrender.com/
+
 ## 🔍 Overview
 
 FuelEU Maritime regulations require ships to progressively reduce their greenhouse gas (GHG) intensity over time, starting with a heavily monitored baseline target.
